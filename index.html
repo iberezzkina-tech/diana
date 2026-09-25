@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Консилиум — для Дианы</title>
+
+<!--
+  ═══════════════════════════════════════════════════════════════
+   ПЛЕЙСХОЛДЕРЫ ДЛЯ КАРТИНОК
+  ═══════════════════════════════════════════════════════════════
+   1) ФОН ЛАБОРАТОРИИ       → ASSETS.bgLab
+   2) СПРАЙТ МАРГО НОВАК     → ASSETS.margo
+   3) СПРАЙТ ДОТТОРЕ         → ASSETS.dottore
+   4) СПРАЙТ МАХИТО          → ASSETS.mahito
+   Если файла нет — покажется векторная заглушка.
+  ═══════════════════════════════════════════════════════════════
+-->
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #05070d;
+    font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+    color: #e8ecf5;
+  }
+
+  #app {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .bg-layer {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    background-color: #0a0e1a;
+    transition: opacity 0.6s ease;
+    z-index: 0;
+  }
+  .bg-layer::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 40%, rgba(10,20,40,0.1), rgba(5,7,13,0.85) 80%);
+  }
+
+  .sprite-stage {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 80%;
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 1; pointer-events: none;
+  }
+  .sprite {
+    max-height: 120%; max-width: 80%;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 40px rgba(0,0,0,0.7));
+    animation: spriteEnter 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.1) forwards;
+    opacity: 0;
+  }
+  @keyframes spriteEnter {
+    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .sprite-placeholder {
+    width: 240px; height: 400px;
+    border-radius: 120px 120px 40px 40px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 5rem; position: relative;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.7);
+    border: 2px solid rgba(255,255,255,0.15);
+    animation: spriteEnter 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.1) forwards;
+  }
+  .sprite-placeholder::after {
+    content: attr(data-name);
+    position: absolute; bottom: -34px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.9rem; color: rgba(255,255,255,0.6);
+    letter-spacing: 2px; white-space: nowrap;
+  }
+  .ph-margo   { background: linear-gradient(160deg, #2b3a5c, #111726); color: #7aa2ff; }
+  .ph-dottore { background: linear-gradient(160deg, #2b1a2e, #1a0e1f); color: #d17aff; }
+  .ph-mahito  { background: linear-gradient(160deg, #1a2e2a, #0e1a18); color: #7affd1; }
+
+  .dialogue-box {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    z-index: 5;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, transparent, rgba(5,8,16,0.94) 30%);
+    min-height: 32%;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+  .speaker {
+    font-size: 1.05rem; font-weight: 700; letter-spacing: 1.5px;
+    margin-bottom: 8px; text-transform: uppercase;
+    padding: 4px 14px; border-radius: 20px;
+    display: inline-block; align-self: flex-start;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: color 0.3s;
+    flex-shrink: 0;
+  }
+  .speaker.margo   { color: #7aa2ff; border-color: #7aa2ff55; }
+  .speaker.dottore { color: #d17aff; border-color: #d17aff55; }
+  .speaker.mahito  { color: #7affd1; border-color: #7affd155; }
+  .speaker.narrator { color: #aab4cc; border-color: #aab4cc44; font-style: italic; }
+
+  .dialogue-text {
+    font-size: 1.05rem; line-height: 1.6; color: #dfe6f5;
+    max-width: 780px; margin: 0 auto; width: 100%;
+    min-height: 4em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  }
+  .dialogue-text .cursor {
+    display: inline-block; width: 2px; height: 1em;
+    background: #7aa2ff; margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 0.9s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .tap-hint {
+    text-align: center; color: #6a7795;
+    font-size: 0.8rem; margin-top: 12px;
+    letter-spacing: 1.5px;
+    animation: tapPulse 1.6s infinite;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  @keyframes tapPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+  /* ─── ЭКРАН ПРОБУЖДЕНИЯ (переход) ─── */
+  .wake-overlay {
+    position: fixed; inset: 0; z-index: 40;
+    background: #000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+    pointer-events: none;
+  }
+  .wake-overlay.active {
+    display: flex;
+    pointer-events: auto;
+  }
+  .wake-overlay.visible {
+    opacity: 1;
+  }
+  .wake-inner {
+    max-width: 480px;
+    color: #cbd5e8;
+    font-size: 1.15rem;
+    line-height: 1.8;
+    letter-spacing: 0.4px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 1.4s ease 0.6s, transform 1.4s ease 0.6s;
+  }
+  .wake-overlay.visible .wake-inner {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .wake-inner .dim {
+    color: #6a7795;
+    font-size: 0.95rem;
+  }
+  .wake-inner .accent {
+    color: #7aa2ff;
+  }
+
+  .screen {
+    position: absolute; inset: 0; z-index: 10;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px; text-align: center;
+    animation: fadeIn 0.6s ease;
+    overflow-y: auto;
+  }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .title-main {
+    font-size: clamp(2rem, 8vw, 3.6rem);
+    font-weight: 800; letter-spacing: 2px;
+    background: linear-gradient(135deg, #7aa2ff, #d17aff, #7affd1);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 20px rgba(120,160,255,0.4));
+  }
+  .title-sub {
+    color: #8b96b5; font-size: clamp(0.9rem, 3vw, 1.15rem);
+    letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 30px;
+  }
+  .title-preamble {
+    max-width: 560px;
+    color: #b6c0d8;
+    font-size: 0.95rem;
+    line-height: 1.75;
+    margin-bottom: 32px;
+    padding: 18px 22px;
+    border-radius: 18px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.06);
+    text-align: left;
+  }
+  .title-preamble p { margin-bottom: 12px; }
+  .title-preamble p:last-child { margin-bottom: 0; }
+  .title-preamble em { color: #7aa2ff; font-style: normal; }
+
+  .btn-main {
+    background: linear-gradient(135deg, #2a3a6a, #1a2244);
+    border: 1px solid #4a5a8a; color: #fff;
+    padding: 16px 48px; border-radius: 50px;
+    font-size: 1.1rem; font-weight: 600;
+    letter-spacing: 1.5px; cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 10px 30px -8px rgba(80,120,255,0.5);
+    min-height: 52px; touch-action: manipulation;
+    flex-shrink: 0;
+  }
+  .btn-main:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -8px rgba(80,120,255,0.7); }
+  .btn-main:active { transform: scale(0.97); }
+
+  .hint-bday {
+    color: #6a7795; font-size: 0.85rem;
+    margin-top: 28px; letter-spacing: 1px;
+  }
+
+  /* ─── МИНИ-ИГРЫ ─── */
+  .mini-wrap {
+    position: absolute; inset: 0; z-index: 15;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    background: rgba(5,8,16,0.9);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    animation: fadeIn 0.4s ease;
+    overflow-y: auto;
+  }
+  .mini-wrap.active { display: flex; }
+
+  .mini-title {
+    font-size: clamp(1.2rem, 4vw, 1.7rem);
+    font-weight: 700; margin-bottom: 6px;
+    color: #fff; text-align: center;
+    flex-shrink: 0;
+  }
+  .mini-desc {
+    color: #98a4c0; font-size: 0.95rem;
+    margin-bottom: 22px; text-align: center;
+    max-width: 500px; line-height: 1.5;
+    flex-shrink: 0;
+  }
+
+  .cards-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 12px; max-width: 520px; width: 100%;
+    margin-bottom: 20px;
+  }
+  .card {
+    background: #141a2b; border: 1px solid #2c3a5c;
+    border-radius: 16px; padding: 16px 14px;
+    font-size: 0.92rem; color: #c8d2e8;
+    cursor: pointer; transition: all 0.25s;
+    min-height: 68px;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; line-height: 1.35;
+    touch-action: manipulation;
+  }
+  .card:active { transform: scale(0.97); }
+  .card.selected {
+    background: #1e2c50; border-color: #7aa2ff;
+    color: #fff; box-shadow: 0 0 20px rgba(120,160,255,0.4);
+  }
+  .card.correct { background: #14381e; border-color: #4aff88; color: #b6ffcf; }
+  .card.wrong   { background: #38141a; border-color: #ff4a6e; color: #ffb6c4; }
+
+  /* Диагнозы Марго */
+  .diag-block {
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 18px;
+    text-align: left;
+  }
+  .diag-block-title {
+    font-size: 0.85rem;
+    color: #8b96b5;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding-left: 4px;
+  }
+  .diag-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .diag-opt {
+    background: #141a2b;
+    border: 1px solid #2c3a5c;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.92rem;
+    color: #c8d2e8;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    touch-action: manipulation;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+  }
+  .diag-opt:active { transform: scale(0.98); }
+  .diag-opt.chosen {
+    background: #1e2c50;
+    border-color: #7aa2ff;
+    color: #fff;
+    box-shadow: 0 0 16px rgba(120,160,255,0.35);
+  }
+  .diag-opt.correct { background: #14381e; border-color: #4aff88; color: #b6ffcf; }
+  .diag-opt.wrong   { background: #38141a; border-color: #ff4a6e; color: #ffb6c4; }
+  .diag-opt:disabled { opacity: 0.5; cursor: default; }
+
+  .timing-track {
+    width: 100%; max-width: 480px; height: 56px;
+    background: #141a2b; border: 1px solid #2c3a5c;
+    border-radius: 28px; position: relative;
+    overflow: hidden; margin-bottom: 26px;
+    flex-shrink: 0;
+  }
+  .timing-zone {
+    position: absolute; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #7affd155, #7affd199, #7affd155);
+    border-left: 2px solid #7affd1;
+    border-right: 2px solid #7affd1;
+  }
+  .timing-marker {
+    position: absolute; top: 4px; bottom: 4px;
+    width: 8px; border-radius: 4px;
+    background: #ff4a6e; box-shadow: 0 0 20px #ff4a6e;
+    transform: translateX(-50%);
+  }
+
+  .dilemma-text {
+    font-size: 1.05rem; line-height: 1.6;
+    color: #e8ecf5; max-width: 560px;
+    margin-bottom: 24px; text-align: center;
+    font-style: italic;
+    flex-shrink: 0;
+  }
+  .dilemma-options {
+    display: flex; flex-direction: column;
+    gap: 12px; width: 100%; max-width: 560px;
+  }
+  .dilemma-opt {
+    background: #141a2b; border: 1px solid #2c3a5c;
+    border-radius: 14px; padding: 14px 18px;
+    font-size: 0.95rem; color: #c8d2e8;
+    cursor: pointer; transition: all 0.2s;
+    text-align: left; line-height: 1.45;
+    touch-action: manipulation; min-height: 52px;
+  }
+  .dilemma-opt:active { transform: scale(0.98); }
+  .dilemma-opt.chosen {
+    background: #1e2c50; border-color: #7aa2ff;
+    color: #fff; box-shadow: 0 0 20px rgba(120,160,255,0.4);
+  }
+  .dilemma-opt:disabled { opacity: 0.45; cursor: default; }
+
+  /* ─── ФИНАЛ — ТЕЛЕФОН ─── */
+  .phone-stage {
+    position: absolute; inset: 0; z-index: 20;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    padding: 20px 14px calc(20px + env(safe-area-inset-bottom));
+    background: radial-gradient(circle at 50% 20%, #131a2b, #05070d 80%);
+    animation: fadeIn 0.6s ease;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .phone-stage.active { display: flex; }
+
+  .phone-frame {
+    background: #0d101a;
+    border-radius: 44px;
+    padding: 16px 10px 22px;
+    box-shadow: 0 0 0 4px #262d3d, 0 40px 70px -15px black, inset 0 0 0 1px #5f6b8a;
+    max-width: 400px; width: 100%;
+    margin: 0 auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    height: min(760px, calc(100vh - 60px));
+    min-height: 500px;
+  }
+  .phone-content {
+    background: #070a12;
+    border-radius: 32px;
+    padding: 20px 14px 14px;
+    display: flex; flex-direction: column;
+    gap: 16px;
+    border: 1px solid #333c52;
+    box-shadow: inset 0 0 25px #00000090;
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+  .status-bar {
+    display: flex; justify-content: space-between;
+    align-items: center; font-size: 0.85rem;
+    color: #9aa5c0; padding: 0 6px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .status-icons { display: flex; gap: 7px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; fill: #9aa5c0; stroke: #9aa5c0; stroke-width: 0.5; }
+
+  .lock-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    animation: fadeIn 0.5s ease;
+    position: relative;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .lock-screen.hidden {
+    opacity: 0;
+    transform: scale(1.05);
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+  }
+  .lock-date {
+    font-size: 0.95rem;
+    color: #8b96b5;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .lock-time {
+    font-size: 4.5rem;
+    font-weight: 200;
+    color: #fff;
+    letter-spacing: -2px;
+    line-height: 1;
+    text-shadow: 0 0 40px rgba(120,160,255,0.4);
+  }
+  .lock-day {
+    font-size: 1rem;
+    color: #8b96b5;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .lock-btn {
+    margin-top: 40px;
+    background: linear-gradient(135deg, #2a3a6a, #1a2244);
+    border: 1px solid #4a5a8a;
+    color: #fff;
+    padding: 14px 38px;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 10px 30px -8px rgba(80,120,255,0.5);
+    touch-action: manipulation;
+    min-height: 48px;
+  }
+  .lock-btn:hover { transform: translateY(-2px); }
+  .lock-btn:active { transform: scale(0.97); }
+
+  .notifs {
+    display: flex; flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .notifs.visible { opacity: 1; }
+  .notifs::-webkit-scrollbar { width: 4px; }
+  .notifs::-webkit-scrollbar-track { background: transparent; }
+  .notifs::-webkit-scrollbar-thumb { background: #2c3a5c; border-radius: 2px; }
+
+  .notif {
+    background: #171d2b;
+    border-radius: 20px;
+    padding: 14px 16px;
+    text-align: left;
+    border: 1px solid #39435c;
+    box-shadow: 0 12px 22px -10px #00000090;
+    animation: slideIn 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+    display: flex; gap: 12px; align-items: flex-start;
+    flex-shrink: 0;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.92); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .notif-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; font-weight: 700;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .av-margo   { background: linear-gradient(135deg, #2b3a5c, #111726); color: #7aa2ff; }
+  .av-dottore { background: linear-gradient(135deg, #2b1a2e, #1a0e1f); color: #d17aff; }
+  .av-mahito  { background: linear-gradient(135deg, #1a2e2a, #0e1a18); color: #7affd1; }
+  .av-vily    { background: linear-gradient(135deg, #3a2b1a, #1a120e); color: #ffc87a; }
+  .av-mchs    { background: linear-gradient(135deg, #3a1a1a, #1a0e0e); color: #ff7a7a; }
+
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 3px; letter-spacing: 0.3px; }
+  .notif-name.margo   { color: #7aa2ff; }
+  .notif-name.dottore { color: #d17aff; }
+  .notif-name.mahito  { color: #7affd1; }
+  .notif-name.vily    { color: #ffc87a; }
+  .notif-name.mchs    { color: #ff7a7a; }
+  .notif-text { color: #b6c0d8; font-size: 0.92rem; line-height: 1.5; word-wrap: break-word; }
+  .notif-time { color: #5f6a85; font-size: 0.72rem; margin-top: 4px; }
+
+  .dock {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: #141926;
+    border-radius: 26px;
+    padding: 10px 8px;
+    border: 1px solid #2c3448;
+    flex-shrink: 0;
+  }
+  .dock-icon {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    color: #6f7a9c; font-size: 0.62rem;
+    opacity: 0.75;
+  }
+  .dock-icon svg {
+    width: 22px; height: 22px;
+    fill: none; stroke: #6f7a9c; stroke-width: 1.8;
+  }
+
+  .final-actions {
+    display: flex; gap: 12px;
+    justify-content: center; flex-wrap: wrap;
+    margin: 22px 0 20px;
+    width: 100%; flex-shrink: 0;
+  }
+
+  #confettiCanvas {
+    position: fixed; inset: 0; z-index: 30;
+    pointer-events: none; display: none;
+  }
+  #confettiCanvas.active { display: block; }
+
+  @media (max-width: 600px) {
+    .dialogue-box { padding: 14px 12px calc(14px + env(safe-area-inset-bottom)); min-height: 42%; max-height: 62vh; }
+    .dialogue-text { font-size: 1rem; }
+    .speaker { font-size: 0.95rem; }
+    .sprite { max-width: 100%; }
+    .sprite-placeholder { width: 170px; height: 300px; font-size: 3.5rem; border-radius: 90px 90px 30px 30px; }
+    .sprite-stage { height: 85%; }
+    .cards-grid { gap: 10px; }
+    .card { font-size: 0.85rem; padding: 12px 10px; }
+    .phone-frame { max-width: 100%; border-radius: 34px; padding: 10px 7px 16px; height: min(720px, calc(100vh - 30px)); min-height: 460px; }
+    .phone-content { border-radius: 24px; padding: 14px 10px 10px; gap: 12px; }
+    .notif { padding: 11px 12px; border-radius: 16px; }
+    .notif-avatar { width: 32px; height: 32px; font-size: 1rem; }
+    .notif-name { font-size: 0.8rem; }
+    .notif-text { font-size: 0.84rem; }
+    .mini-title { font-size: 1.3rem; }
+    .lock-time { font-size: 3.6rem; }
+    .title-preamble { font-size: 0.88rem; padding: 14px 16px; }
+    .dock-icon svg { width: 20px; height: 20px; }
+    .dock-icon { font-size: 0.58rem; }
+    .diag-opt { font-size: 0.86rem; padding: 10px 13px; }
+    .wake-inner { font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="bg-layer" id="bgLayer"></div>
+  <div class="sprite-stage" id="spriteStage"></div>
+
+  <div class="dialogue-box" id="dialogueBox" style="display:none;">
+    <div class="speaker" id="speaker"></div>
+    <div class="dialogue-text" id="dialogueText"></div>
+    <div class="tap-hint" id="tapHint">▸ НАЖМИ, ЧТОБЫ ПРОДОЛЖИТЬ</div>
+  </div>
+
+  <!-- ТИТУЛ + ПРЕДЫСТОРИЯ -->
+  <div class="screen active" id="titleScreen">
+    <div class="title-main">КОНСИЛИУМ</div>
+    <div class="title-sub">ночные гости</div>
+    <div class="title-preamble">
+      <p>Ты — <em>Диана</em>, студентка медицинского. Вечер начался с конспектов, закончился очередным матчем в Valorant, а где-то между этим — ты провалилась в сон прямо за столом, уткнувшись носом в учебник по патологии.</p>
+      <p>Тебе снится некая лаборатория.</p>
+    </div>
+    <button class="btn-main" id="startBtn">НАЧАТЬ</button>
+    <div class="hint-bday">🎂 специально для Дианы</div>
+  </div>
+
+  <!-- МИНИ-ИГРА 1: МАРГО — ЭТАП 1 (СИМПТОМЫ) -->
+  <div class="mini-wrap" id="mini1">
+    <div class="mini-title">Диагностика · этап 1</div>
+    <div class="mini-desc">Выберите три симптома, которые складываются в один диагноз.</div>
+    <div class="cards-grid" id="cardsGrid"></div>
+    <button class="btn-main" id="mini1Check">ПОДТВЕРДИТЬ</button>
+  </div>
+
+  <!-- МИНИ-ИГРА 1: МАРГО — ЭТАП 2 (ДИАГНОЗ) -->
+  <div class="mini-wrap" id="mini1b">
+    <div class="mini-title">Диагностика · этап 2</div>
+    <div class="mini-desc">Теперь поставьте диагноз</div>
+    <div id="diagContainer"></div>
+    <button class="btn-main" id="mini1bCheck">ПОДТВЕРДИТЬ</button>
+  </div>
+
+  <!-- МИНИ-ИГРА 2: ДОТТОРЕ -->
+  <div class="mini-wrap" id="mini2">
+    <div class="mini-title">Точность</div>
+    <div class="mini-desc">Остановите маркер в зелёной зоне.</div>
+    <div class="timing-track" id="timingTrack">
+      <div class="timing-zone" id="timingZone"></div>
+      <div class="timing-marker" id="timingMarker"></div>
+    </div>
+    <button class="btn-main" id="mini2Stop">СТОП</button>
+    <div style="margin-top:16px; color:#98a4c0; letter-spacing:2px;" id="mini2Score">0 / 3</div>
+  </div>
+
+  <!-- МИНИ-ИГРА 3: МАХИТО -->
+  <div class="mini-wrap" id="mini3">
+    <div class="mini-title">Природа души</div>
+    <div class="mini-desc">Здесь нет правильных ответов.</div>
+    <div class="dilemma-text" id="dilemmaText"></div>
+    <div class="dilemma-options" id="dilemmaOptions"></div>
+  </div>
+
+  <!-- ФИНАЛ -->
+  <div class="phone-stage" id="phoneStage">
+    <div class="phone-frame">
+      <div class="phone-content">
+        <div class="status-bar">
+          <span id="statusTime">03:00</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z" fill="currentColor"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 18.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM7.5 14.5a6.5 6.5 0 019 0M4 11a10.5 10.5 0 0116 0" stroke="currentColor" fill="none" stroke-width="1.8"/></svg>
+            <svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="1.5"/><rect x="6" y="10" width="10" height="6" rx="1" fill="#9aa5c0"/><path d="M20 11v2" stroke="currentColor" stroke-width="2"/></svg>
+          </div>
+        </div>
+
+        <div class="lock-screen" id="lockScreen">
+          <div class="lock-date" id="lockDate">четверг, 1 октября</div>
+          <div class="lock-time" id="lockTime">03:00</div>
+          <div class="lock-day">2026</div>
+          <button class="lock-btn" id="unlockBtn">РАЗБЛОКИРОВАТЬ</button>
+        </div>
+
+        <div class="notifs" id="notifs"></div>
+
+        <div class="dock">
+          <div class="dock-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a2 2 0 01-2 2H5a2 2 0 01-2-2V10z" stroke="currentColor" fill="none"/></svg>
+            <span>Дом</span>
+          </div>
+          <div class="dock-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" fill="none"/><path d="M12 7v5l3 3" stroke="currentColor" fill="none"/></svg>
+            <span>Время</span>
+          </div>
+          <div class="dock-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2" stroke="currentColor" fill="none"/><path d="M8 6V4h8v2" stroke="currentColor" fill="none"/></svg>
+            <span>Фото</span>
+          </div>
+          <div class="dock-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke="currentColor" fill="none"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" fill="none"/></svg>
+            <span>Настр.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="final-actions">
+      <button class="btn-main" id="replayBtn">↺ ЕЩЁ РАЗ</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ПРОБУЖДЕНИЯ (переход между сном и телефоном) -->
+  <div class="wake-overlay" id="wakeOverlay">
+    <div class="wake-inner" id="wakeInner">
+      Ты открываешь глаза.<br>
+      <span class="dim">На столе лежит учебник по патологии. <span class="accent">03:00</span>.</span><br><br>
+      Телефон вибрирует —<br>кто-то написал.
+    </div>
+  </div>
+
+  <canvas id="confettiCanvas"></canvas>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ПЛЕЙСХОЛДЕРЫ КАРТИНОК
+   ═══════════════════════════════════════════════════════════════ */
+const ASSETS = {
+  bgLab:   'assets/bg-lab.jpg',
+  margo:   'assets/margo.png',
+  dottore: 'assets/dottore.png',
+  mahito:  'assets/mahito.png'
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   УВЕДОМЛЕНИЯ НА ФИНАЛЬНОМ ЭКРАНЕ
+   ═══════════════════════════════════════════════════════════════ */
+const FINAL_MESSAGES = [
+  {
+    name: 'Марго Новак',
+    av: 'М', avClass: 'av-margo', nameClass: 'margo',
+    text: 'С днём рождения, Диана. Желаю тебе не терять любопытство — оно куда важнее, чем кажется, особенно в мире, где большинство предпочитает не задавать вопросов.',
+    time: 'сейчас'
+  },
+  {
+    name: 'Дотторе',
+    av: 'Д', avClass: 'av-dottore', nameClass: 'dottore',
+    text: 'С днём рождения. Желаю тебе мудрости, той, что добывается собственными руками. И знаний, которые однажды позволят тебе понять чуть больше, чем всем остальным.',
+    time: 'сейчас'
+  },
+  {
+    name: 'Махито',
+    av: 'М', avClass: 'av-mahito', nameClass: 'mahito',
+    text: 'С днём рождения. Желаю тебе успехов в изучении природы души — не только чужой, но и своей. Это самое интересное исследование, которое тебе предстоит.',
+    time: 'сейчас'
+  },
+  {
+    name: 'МЧС России',
+    av: '⚠', avClass: 'av-mchs', nameClass: 'mchs',
+    text: 'Вы пережили ещё один год! Поздравляем!',
+    time: 'системное'
+  },
+  {
+    name: 'от Вили',
+    av: 'В', avClass: 'av-vily', nameClass: 'vily',
+    text: 'Диана, с днём рождения. Этот мир стал лучше, потому что в нём есть ты.',
+    time: 'сейчас'
+  }
+];
+
+/* ═══════════════════════════════════════════════════════════════ */
+
+(function(){
+  'use strict';
+
+  const state = { order: [], current: 0, stage: 'title', mahitoAnswers: [], margoLot: null };
+
+  const bgLayer       = document.getElementById('bgLayer');
+  const spriteStage   = document.getElementById('spriteStage');
+  const dialogueBox   = document.getElementById('dialogueBox');
+  const speakerEl     = document.getElementById('speaker');
+  const dialogueText  = document.getElementById('dialogueText');
+  const tapHint       = document.getElementById('tapHint');
+  const titleScreen   = document.getElementById('titleScreen');
+  const startBtn      = document.getElementById('startBtn');
+  const phoneStage    = document.getElementById('phoneStage');
+  const notifsEl      = document.getElementById('notifs');
+  const replayBtn     = document.getElementById('replayBtn');
+  const confettiCanvas= document.getElementById('confettiCanvas');
+  const lockScreen    = document.getElementById('lockScreen');
+  const unlockBtn     = document.getElementById('unlockBtn');
+  const wakeOverlay   = document.getElementById('wakeOverlay');
+  const wakeInner     = document.getElementById('wakeInner');
+
+  // ─── ЗВУК ───
+  let audioCtx = null;
+  function initAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function beep(freq, dur, type, vol) {
+    if (!audioCtx) return;
+    try {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type || 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(vol || 0.12, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (dur||0.12));
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + (dur||0.12));
+    } catch(e){}
+  }
+
+  function setBackground() {
+    bgLayer.style.backgroundImage = `url('${ASSETS.bgLab}')`;
+  }
+  function clearSprites() { spriteStage.innerHTML = ''; }
+  function showSprite(who) {
+    clearSprites();
+    const img = new Image();
+    img.className = 'sprite';
+    img.alt = who;
+    img.onload = () => spriteStage.appendChild(img);
+    img.onerror = () => {
+      const ph = document.createElement('div');
+      ph.className = 'sprite-placeholder ph-' + who;
+      ph.dataset.name = ({margo:'МАРГО', dottore:'ДОТТОРЕ', mahito:'МАХИТО'})[who];
+      ph.textContent = ({margo:'🛸', dottore:'🧪', mahito:'🌀'})[who];
+      spriteStage.appendChild(ph);
+    };
+    img.src = ASSETS[who];
+  }
+
+  // ─── ДИАЛОГ ───
+  let typeTimer = null;
+  let typing = false;
+  let fullText = '';
+  let pendingAdvance = null;
+
+  function showDialogue(speaker, text, onDone) {
+    dialogueBox.style.display = 'flex';
+    speakerEl.className = 'speaker ' + speaker;
+    speakerEl.textContent = ({
+      margo:   'Марго Новак',
+      dottore: 'Дотторе',
+      mahito:  'Махито',
+      narrator:'— — —'
+    })[speaker] || '';
+    if (speaker !== 'narrator') showSprite(speaker);
+
+    typing = true;
+    fullText = text;
+    dialogueText.innerHTML = '';
+    let i = 0;
+    clearInterval(typeTimer);
+    typeTimer = setInterval(() => {
+      if (i >= text.length) {
+        clearInterval(typeTimer);
+        typing = false;
+        dialogueText.innerHTML = text;
+        return;
+      }
+      dialogueText.innerHTML = text.slice(0, i+1) + '<span class="cursor"></span>';
+      i++;
+    }, 20);
+
+    pendingAdvance = onDone || null;
+    tapHint.style.display = 'block';
+  }
+
+  function advance() {
+    if (typing) {
+      clearInterval(typeTimer);
+      typing = false;
+      dialogueText.innerHTML = fullText;
+      return;
+    }
+    if (pendingAdvance) {
+      const fn = pendingAdvance;
+      pendingAdvance = null;
+      fn();
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    initAudio();
+    if (dialogueBox.style.display !== 'none' && state.stage === 'dialogue') {
+      if (e.target.closest('.mini-wrap') || e.target.closest('.phone-stage') || e.target.closest('#titleScreen') || e.target.closest('.wake-overlay')) return;
+      advance();
+    }
+  });
+  document.addEventListener('touchstart', (e) => {
+    initAudio();
+    if (dialogueBox.style.display !== 'none' && state.stage === 'dialogue') {
+      if (e.target.closest('.mini-wrap') || e.target.closest('.phone-stage') || e.target.closest('#titleScreen') || e.target.closest('.wake-overlay')) return;
+      e.preventDefault();
+      advance();
+    }
+  }, { passive: false });
+
+  // ═══════════════════════════════════════════════════════════════
+  //  СЦЕНАРИЙ
+  // ═══════════════════════════════════════════════════════════════
+  const SCENES = {
+
+    margo: [
+      { s: 'narrator', t: 'В лаборатории темно и сыро. Как ты здесь оказалась?..' },
+      { s: 'narrator', t: 'Раздаётся стук в дверь. Гостья входит, не дожидаясь ответа.' },
+      { s: 'margo', t: 'Привет. Ты Диана, верно? Мне нужно второе мнение.' },
+      { s: 'margo', t: 'Я Марго Новак, исследовательница с Марса. Да, я знаю, как это звучит, и нет, я не буду объяснять, как я здесь оказалась.' },
+      { s: 'margo', t: 'Поможешь мне провести диагностику?' },
+      { s: 'margo', t: 'Не смотри так. Я не собираюсь тебя вскрывать.'},
+      { s: 'margo', t: 'Это была шутка. Не суть.'},
+      { s: 'margo', t: 'У меня есть шесть симптомов, и мне нужно, чтобы ты выбрала три, которые складываются в один диагноз.' },
+    ],
+
+    dottore: [
+      { s: 'narrator', t: 'Что это за место?..' },
+      { s: 'narrator', t: 'Дверь открывается сама. На пороге — человек в маске.' },
+      { s: 'dottore', t: 'Ах, наконец-то мы встретились, Диана. Я Дотторе, учёный. Ты, должно быть, слышала обо мне.' },
+      { s: 'dottore', t: 'Видишь ли, мне нужна точность — идеальная дозировка, идеальный тайминг, идеальная реакция.' },
+      { s: 'dottore', t: 'Всё то, чего мои подопытные, то есть коллеги, лишены.' },
+      { s: 'dottore', t: 'Ты выглядишь... перспективно.' },
+      { s: 'dottore', t: 'Расслабься. Это просто игра на реакцию.' },
+      { s: 'dottore', t: 'Никто не умрёт — по крайней мере, сегодня и, по крайней мере, от моей руки.' },
+      { s: 'dottore', t: 'Останови маркер в зелёной зоне три раза подряд, и мы посмотрим, достойна ли ты стать моей новой... ассистенткой.' }
+    ],
+
+    mahito: [
+      { s: 'narrator', t: 'Вокруг разбросаны разбитые колбы, светятся фиолетовым голографические экраны...' },
+      { s: 'narrator', t: 'Тень в углу комнаты становится плотнее.' },
+      { s: 'mahito', t: 'Приветик, роднулька! Думаю, ты меня узнала.' },
+      { s: 'mahito', t: 'Я наблюдал за тобой некоторое время и мне стало интересно, как ты мыслишь.' },
+      { s: 'mahito', t: 'Сегодня я хочу изучить твою душу.' },
+      { s: 'mahito', t: 'Я задам тебе несколько вопросов.'},
+      { s: 'mahito', t: 'Здесь не будет правильных ответов.'},
+      { s: 'mahito', t: 'Мне действительно интересно, что ты выберешь: я хочу понять тебя.' }
+    ]
+  };
+
+  /* ═══════════════════════════════════════════════════════════════
+     ПОСТ-РЕПЛИКИ ПОСЛЕ МИНИ-ИГР
+     Каждый персонаж = массив реплик. Пиши сколько угодно.
+     Формат: { s: 'кто', t: 'текст' }
+     s: 'margo' / 'dottore' / 'mahito' / 'narrator'
+     ═══════════════════════════════════════════════════════════════ */
+  const POST = {
+    margo: [
+      { s: 'margo', t: 'Хм. Да, мне тоже кажется, что это правильный ответ. Спасибо.' },
+      { s: 'margo', t: 'Я пошла. Дел много.' },
+      { s: 'margo', t: 'Думаю, мы ещё встретимся.' }
+      // ← добавляй сюда новые реплики
+    ],
+    dottore: [
+      { s: 'dottore', t: 'Рука твёрже, чем у моих подопытных. То есть коллег. Хорошо. Очень хорошо.' },
+      { s: 'dottore', t: 'Я согласую с Панталоне бюджет на позицию и отправлю тебе оффер к концу недели.' },
+      { s: 'dottore', t: 'Я пошёл. Не скучай.' }
+      // ← добавляй сюда новые реплики
+    ],
+    mahito: [
+      // сюда попадёт одна из трёх реакций — см. finishCharacter ниже
+    ]
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  //  МИНИ-ИГРА 1: ДИАГНОСТИКА (МАРГО) — ЭТАП 1
+  // ═══════════════════════════════════════════════════════════════
+  const CARD_DATA = [
+    { id:'fever',    text:'Повышенная температура',          lot:'A' },
+    { id:'cough',    text:'Сухой кашель',                    lot:'A' },
+    { id:'lungs',    text:'Затемнение в лёгком',             lot:'A' },
+    { id:'sneakers', text:'Желание купить кроссовки',        lot:'B' },
+    { id:'nostalgy', text:'Ностальгия по 2016-му',           lot:'B' },
+    { id:'rap',      text:'Желание начать читать рэп',       lot:'B' }
+  ];
+  let mini1Selected = new Set();
+
+  function startMini1() {
+    state.stage = 'mini1';
+    dialogueBox.style.display = 'none';
+    document.getElementById('mini1').classList.add('active');
+    mini1Selected = new Set();
+    const grid = document.getElementById('cardsGrid');
+    grid.innerHTML = '';
+    const arr = [...CARD_DATA].sort(() => Math.random() - 0.5);
+    arr.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.dataset.id = c.id;
+      el.dataset.lot = c.lot;
+      el.textContent = c.text;
+      el.addEventListener('click', () => {
+        initAudio();
+        if (el.classList.contains('correct') || el.classList.contains('wrong')) return;
+        if (mini1Selected.has(c.id)) {
+          mini1Selected.delete(c.id);
+          el.classList.remove('selected');
+          beep(400, 0.06, 'sine', 0.08);
+        } else {
+          if (mini1Selected.size >= 3) return;
+          mini1Selected.add(c.id);
+          el.classList.add('selected');
+          beep(700, 0.06, 'sine', 0.1);
+        }
+      });
+      grid.appendChild(el);
+    });
+  }
+
+  document.getElementById('mini1Check').addEventListener('click', () => {
+    initAudio();
+    if (mini1Selected.size !== 3) { beep(220, 0.2, 'sawtooth', 0.15); return; }
+
+    const chosen = Array.from(document.querySelectorAll('#cardsGrid .card'))
+      .filter(el => mini1Selected.has(el.dataset.id));
+    const lots = new Set(chosen.map(el => el.dataset.lot));
+
+    if (lots.size === 1) {
+      chosen.forEach(el => el.classList.add('correct'));
+      beep(880, 0.15, 'sine', 0.18);
+      state.margoLot = chosen[0].dataset.lot;
+      setTimeout(() => {
+        document.getElementById('mini1').classList.remove('active');
+        startMini1b();
+      }, 900);
+    } else {
+      chosen.forEach(el => el.classList.add('wrong'));
+      beep(200, 0.3, 'sawtooth', 0.15);
+      setTimeout(() => {
+        document.querySelectorAll('#cardsGrid .card').forEach(el => {
+          el.classList.remove('correct','wrong','selected');
+        });
+        mini1Selected.clear();
+      }, 1400);
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  //  МИНИ-ИГРА 1 — ЭТАП 2: ВЫБОР ДИАГНОЗА
+  // ═══════════════════════════════════════════════════════════════
+  const DIAGNOSES = {
+    A: {
+      title: 'Диагноз',
+      correct: 'Пневмония',
+      options: ['Пневмония', 'Обычная простуда', 'Аллергия на пыль']
+    },
+    B: {
+      title: 'Диагноз',
+      correct: 'Кризис четверти жизни',
+      options: ['Кризис четверти жизни', 'Ностальгия', 'Хроническая прокрастинация']
+    }
+  };
+
+  let diagState = {};
+
+  function startMini1b() {
+    state.stage = 'mini1b';
+    document.getElementById('mini1b').classList.add('active');
+    const container = document.getElementById('diagContainer');
+    container.innerHTML = '';
+    diagState = {};
+
+    const lot = state.margoLot;
+    const d = DIAGNOSES[lot];
+
+    const block = document.createElement('div');
+    block.className = 'diag-block';
+    block.innerHTML = `<div class="diag-block-title">${d.title}</div>`;
+
+    const opts = document.createElement('div');
+    opts.className = 'diag-options';
+
+    const shuffled = [...d.options].sort(() => Math.random() - 0.5);
+    shuffled.forEach(optText => {
+      const opt = document.createElement('div');
+      opt.className = 'diag-opt';
+      opt.textContent = optText;
+      opt.addEventListener('click', () => {
+        initAudio();
+        if (opts.dataset.locked === 'true') return;
+        Array.from(opts.children).forEach(c => c.classList.remove('chosen'));
+        opt.classList.add('chosen');
+        diagState[lot] = optText;
+        beep(660, 0.08, 'sine', 0.12);
+      });
+      opts.appendChild(opt);
+    });
+
+    block.appendChild(opts);
+    container.appendChild(block);
+  }
+
+  document.getElementById('mini1bCheck').addEventListener('click', () => {
+    initAudio();
+    const lot = state.margoLot;
+    const d = DIAGNOSES[lot];
+    const chosen = diagState[lot];
+
+    if (!chosen) {
+      beep(220, 0.2, 'sawtooth', 0.15);
+      return;
+    }
+
+    const opts = document.querySelector('#diagContainer .diag-options');
+    opts.dataset.locked = 'true';
+
+    if (chosen === d.correct) {
+      Array.from(opts.children).forEach(c => {
+        if (c.textContent === d.correct) c.classList.add('correct');
+      });
+      beep(880, 0.15, 'sine', 0.18);
+      setTimeout(() => {
+        document.getElementById('mini1b').classList.remove('active');
+        finishCharacter('margo');
+      }, 1000);
+    } else {
+      Array.from(opts.children).forEach(c => {
+        if (c.textContent === chosen) c.classList.add('wrong');
+      });
+      beep(200, 0.3, 'sawtooth', 0.15);
+      setTimeout(() => {
+        document.getElementById('mini1b').classList.remove('active');
+        startMini1b();
+      }, 1600);
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  //  МИНИ-ИГРА 2: ТОЧНОСТЬ (ДОТТОРЕ)
+  // ═══════════════════════════════════════════════════════════════
+  let mini2Running = false;
+  let mini2Pos = 0;
+  let mini2Dir = 1;
+  let mini2Score = 0;
+  let mini2ZoneStart = 0.4, mini2ZoneWidth = 0.18;
+  let mini2RAF = null;
+  const zoneEl = document.getElementById('timingZone');
+  const markerEl = document.getElementById('timingMarker');
+  const scoreEl = document.getElementById('mini2Score');
+
+  function startMini2() {
+    state.stage = 'mini2';
+    dialogueBox.style.display = 'none';
+    document.getElementById('mini2').classList.add('active');
+    mini2Score = 0;
+    scoreEl.textContent = '0 / 3';
+    mini2Running = true;
+    mini2Pos = 0; mini2Dir = 1;
+    randomizeZone();
+    if (mini2RAF) cancelAnimationFrame(mini2RAF);
+    loopMini2();
+  }
+
+  function randomizeZone() {
+    mini2ZoneWidth = 0.16 + Math.random() * 0.1;
+    mini2ZoneStart = 0.1 + Math.random() * (0.9 - mini2ZoneWidth - 0.1);
+    zoneEl.style.left = (mini2ZoneStart * 100) + '%';
+    zoneEl.style.width = (mini2ZoneWidth * 100) + '%';
+  }
+
+  function loopMini2() {
+    if (!mini2Running) return;
+    mini2Pos += mini2Dir * 0.012;
+    if (mini2Pos >= 1) { mini2Pos = 1; mini2Dir = -1; }
+    if (mini2Pos <= 0) { mini2Pos = 0; mini2Dir = 1; }
+    markerEl.style.left = (mini2Pos * 100) + '%';
+    mini2RAF = requestAnimationFrame(loopMini2);
+  }
+
+  document.getElementById('mini2Stop').addEventListener('click', () => {
+    initAudio();
+    if (!mini2Running) return;
+    const inZone = mini2Pos >= mini2ZoneStart && mini2Pos <= mini2ZoneStart + mini2ZoneWidth;
+    if (inZone) {
+      mini2Score++;
+      beep(880, 0.1, 'sine', 0.18);
+      scoreEl.textContent = mini2Score + ' / 3';
+      if (mini2Score >= 3) {
+        mini2Running = false;
+        cancelAnimationFrame(mini2RAF);
+        setTimeout(() => {
+          document.getElementById('mini2').classList.remove('active');
+          finishCharacter('dottore');
+        }, 600);
+        return;
+      }
+    } else {
+      beep(200, 0.25, 'sawtooth', 0.15);
+      mini2Score = 0;
+      scoreEl.textContent = '0 / 3';
+    }
+    randomizeZone();
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  //  МИНИ-ИГРА 3: ФИЛОСОФСКИЕ ДИЛЕММЫ (МАХИТО)
+  // ═══════════════════════════════════════════════════════════════
+  const DILEMMAS = [
+    {
+      text: 'Человек умирает. Его близкие говорят: «Он прожил хорошую жизнь». Но сам он перед смертью сказал: «Я так и не сделал того, что хотел». Кто прав — те, кто его любил, или он сам?',
+      options: [
+        { t: 'Те, кто его любил. Жизнь измеряется не тем, что не сделано, а тем, что было.', mahitoAgrees: false },
+        { t: 'Он сам. Только ты знаешь, была ли твоя жизнь твоей.', mahitoAgrees: true },
+        { t: 'Никто. Смерть лишает оба ответа смысла.', mahitoAgrees: false }
+      ]
+    },
+    {
+      text: 'Если твоя боль делает тебя тем, кто ты есть, — стоит ли от неё избавляться?',
+      options: [
+        { t: 'Стоит. Боль — это не личность, это просто сигнал.', mahitoAgrees: false },
+        { t: 'Не стоит. Убрав боль, ты убьёшь часть себя.', mahitoAgrees: true },
+        { t: 'Смотря какая боль. Некоторую стоит оставить как напоминание.', mahitoAgrees: false }
+      ]
+    },
+    {
+      text: 'Ты можешь узнать истинную причину всех своих поступков. Но после этого ты уже не сможешь действовать иначе. Ты согласишься?',
+      options: [
+        { t: 'Да. Правда важнее иллюзии выбора.', mahitoAgrees: false },
+        { t: 'Нет. Иллюзия выбора — это и есть свобода.', mahitoAgrees: true },
+        { t: 'Соглашусь, но только если правда мне понравится.', mahitoAgrees: false }
+      ]
+    },
+    {
+      text: 'Если проклятье рождается из ненависти людей друг к другу — значит ли это, что проклятье и есть человек, просто в другой форме?',
+      options: [
+        { t: 'Да. Проклятье — это зеркало, а не чудовище.', mahitoAgrees: true },
+        { t: 'Нет. Проклятье — это то, что человек отвергает в себе.', mahitoAgrees: false },
+        { t: 'Неважно. Важно лишь, что с этим делать.', mahitoAgrees: false }
+      ]
+    }
+  ];
+
+  let dilemmaIdx = 0;
+
+  function startMini3() {
+    state.stage = 'mini3';
+    dialogueBox.style.display = 'none';
+    document.getElementById('mini3').classList.add('active');
+    dilemmaIdx = 0;
+    state.mahitoAnswers = [];
+    renderDilemma();
+  }
+
+  function renderDilemma() {
+    const data = DILEMMAS[dilemmaIdx];
+    document.getElementById('dilemmaText').textContent = data.text;
+    const opts = document.getElementById('dilemmaOptions');
+    opts.innerHTML = '';
+    data.options.forEach((o) => {
+      const btn = document.createElement('div');
+      btn.className = 'dilemma-opt';
+      btn.textContent = o.t;
+      btn.addEventListener('click', () => {
+        initAudio();
+        if (btn.disabled) return;
+        Array.from(opts.children).forEach(c => c.disabled = true);
+        btn.classList.add('chosen');
+        state.mahitoAnswers.push(o.mahitoAgrees);
+        beep(660, 0.12, 'sine', 0.15);
+        setTimeout(() => {
+          dilemmaIdx++;
+          if (dilemmaIdx >= DILEMMAS.length) {
+            document.getElementById('mini3').classList.remove('active');
+            finishCharacter('mahito');
+          } else {
+            renderDilemma();
+          }
+        }, 700);
+      });
+      opts.appendChild(btn);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  ЗАВЕРШЕНИЕ ПЕРСОНАЖА (поддерживает несколько пост-реплик)
+  // ═══════════════════════════════════════════════════════════════
+  function finishCharacter(who) {
+    state.stage = 'dialogue';
+
+    let replies;
+
+    if (who === 'mahito') {
+      const agrees = state.mahitoAnswers.filter(Boolean).length;
+      const total = state.mahitoAnswers.length;
+      let reaction;
+      if (agrees === total) {
+        reaction = 'Хм. Ты ответила так же, как ответил бы я. Это интересно — мы ближе, чем тебе кажется, не в смысле симпатии, а в смысле устройства. Ты смотришь на мир и видишь то же, что вижу я: за любыми словами о добре и зле стоит нечто более простое и честное. Я запомню это.';
+      } else if (agrees === 0) {
+        reaction = 'Ты ответила совсем не так, как ответил бы я. У тебя интересное мнение. Это редкость.';
+      } else {
+        reaction = 'Мы совпали в некоторых ответах и разошлись в других — пожалуй, самый честный результат. Ни полного согласия, ни полного расхождения. У тебя интересное мнение, и я не уверен, что могу предсказать твой следующий выбор. Это интригует.';
+      }
+      replies = [
+        { s: 'mahito', t: reaction },
+        { s: 'mahito', t: 'Хи-хи.' },
+        { s: 'narrator', t: 'Махито растворяется в темноте лаборатории.' }
+        // ← сюда можно добавлять новые реплики Махито
+      ];
+    } else {
+      replies = POST[who];
+    }
+
+    // прогоняем реплики по очереди
+    let ri = 0;
+    function nextReply() {
+      if (ri >= replies.length) {
+        state.current++;
+        if (state.current >= state.order.length) {
+          startWakeSequence();
+        } else {
+          runCharacter(state.order[state.current]);
+        }
+        return;
+      }
+      const line = replies[ri];
+      ri++;
+      showDialogue(line.s, line.t, nextReply);
+    }
+    nextReply();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  ЗАПУСК ПЕРСОНАЖА
+  // ═══════════════════════════════════════════════════════════════
+  function runCharacter(who) {
+    state.stage = 'dialogue';
+    clearSprites();
+    const scene = SCENES[who];
+    let i = 0;
+
+    function next() {
+      if (i >= scene.length) {
+        if (who === 'margo') startMini1();
+        else if (who === 'dottore') startMini2();
+        else startMini3();
+        return;
+      }
+      const line = scene[i];
+      i++;
+      showDialogue(line.s, line.t, next);
+    }
+    next();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  ПЕРЕХОД: СОН → ПРОБУЖДЕНИЕ → ТЕЛЕФОН
+  // ═══════════════════════════════════════════════════════════════
+  function startWakeSequence() {
+    // прячем диалог и спрайты
+    dialogueBox.style.display = 'none';
+    clearSprites();
+
+    // показываем оверлей
+    wakeOverlay.classList.add('active');
+    // следующий кадр — включаем прозрачность для плавного fade-in
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        wakeOverlay.classList.add('visible');
+      });
+    });
+
+    // через 4.2 сек — fade out и переход к телефону
+    setTimeout(() => {
+      wakeOverlay.classList.remove('visible');
+      setTimeout(() => {
+        wakeOverlay.classList.remove('active');
+        startFinale();
+      }, 1300);
+    }, 4200);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  ФИНАЛ
+  // ═══════════════════════════════════════════════════════════════
+  let finaleStarted = false;
+
+  function startFinale() {
+    state.stage = 'finale';
+    finaleStarted = false;
+    dialogueBox.style.display = 'none';
+    clearSprites();
+    phoneStage.classList.add('active');
+    notifsEl.innerHTML = '';
+    notifsEl.classList.remove('visible');
+    lockScreen.classList.remove('hidden');
+    void phoneStage.offsetHeight;
+
+    const unlockHandler = (e) => {
+      if (e) e.stopPropagation();
+      if (finaleStarted) return;
+      finaleStarted = true;
+      lockScreen.classList.add('hidden');
+      notifsEl.classList.add('visible');
+      beep(520, 0.1, 'sine', 0.12);
+      setTimeout(() => beep(780, 0.15, 'sine', 0.14), 120);
+      unlockBtn.removeEventListener('click', unlockHandler);
+      setTimeout(showFinalMessages, 700);
+    };
+    unlockBtn.addEventListener('click', unlockHandler);
+  }
+
+  function showFinalMessages() {
+    FINAL_MESSAGES.forEach((m, idx) => {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'notif';
+        el.innerHTML = `
+          <div class="notif-avatar ${m.avClass}">${m.av}</div>
+          <div class="notif-body">
+            <div class="notif-name ${m.nameClass}">${m.name}</div>
+            <div class="notif-text">${m.text}</div>
+            <div class="notif-time">${m.time || 'сейчас'}</div>
+          </div>
+        `;
+        notifsEl.appendChild(el);
+        beep(660 + idx*40, 0.08, 'sine', 0.1);
+        notifsEl.scrollTo({ top: notifsEl.scrollHeight, behavior: 'smooth' });
+        if (idx === FINAL_MESSAGES.length - 1) {
+          setTimeout(launchConfetti, 500);
+        }
+      }, 200 + idx * 1400);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  КОНФЕТТИ
+  // ═══════════════════════════════════════════════════════════════
+  function launchConfetti() {
+    const canvas = confettiCanvas;
+    canvas.classList.add('active');
+    const ctx = canvas.getContext('2d');
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+    const colors = ['#7aa2ff','#d17aff','#7affd1','#ffc87a','#ff7a9e','#ffffff'];
+    const pieces = [];
+    const N = 160;
+    for (let i = 0; i < N; i++) {
+      pieces.push({
+        x: Math.random() * W,
+        y: -20 - Math.random() * H * 0.5,
+        w: 6 + Math.random() * 8,
+        h: 8 + Math.random() * 10,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        vy: 1.5 + Math.random() * 3,
+        vx: -1.5 + Math.random() * 3,
+        rot: Math.random() * Math.PI,
+        vr: -0.1 + Math.random() * 0.2
+      });
+    }
+    let start = null;
+    const DURATION = 7000;
+    function frame(ts) {
+      if (!start) start = ts;
+      const elapsed = ts - start;
+      ctx.clearRect(0, 0, W, H);
+      pieces.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += 0.03;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+      });
+      if (elapsed < DURATION) {
+        requestAnimationFrame(frame);
+      } else {
+        canvas.classList.remove('active');
+        ctx.clearRect(0, 0, W, H);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', () => {
+    if (confettiCanvas.classList.contains('active')) {
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  //  СТАРТ
+  // ═══════════════════════════════════════════════════════════════
+  function startGame() {
+    titleScreen.classList.remove('active');
+    phoneStage.classList.remove('active');
+    setBackground();
+    const all = ['margo','dottore','mahito'];
+    state.order = all.sort(() => Math.random() - 0.5);
+    state.current = 0;
+    runCharacter(state.order[0]);
+  }
+
+  startBtn.addEventListener('click', () => { initAudio(); startGame(); });
+  replayBtn.addEventListener('click', () => {
+    phoneStage.classList.remove('active');
+    notifsEl.innerHTML = '';
+    notifsEl.classList.remove('visible');
+    lockScreen.classList.remove('hidden');
+    finaleStarted = false;
+    titleScreen.classList.add('active');
+    state.stage = 'title';
+  });
+
+  setBackground();
+
+})();
+</script>
+</body>
+</html>
